@@ -35,7 +35,10 @@ router.post('/', async (req, res) => {
             emails: users.map((u) => ({ userId: u, status: 'sent' }))
         });
         await newCampaign.save();
-        res.status(201).json(newCampaign);
+
+        const populatedCampaign = await Campaign.findById(newCampaign._id).populate("users");
+
+        res.status(201).json(populatedCampaign);
     } catch (err) {
         res.status(500).json({ error: 'Failed to create campaign' });
     }
