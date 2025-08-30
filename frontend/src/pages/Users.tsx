@@ -24,26 +24,33 @@ function Users() {
 
     return (
         <div className="p-6">
-            <h1 className="text-2xl font-bold mb-4">Users</h1>
-            <table className="min-w-full bg-white shadow-md rounded-lg overflow-hidden">
-                <thead className="bg-gray-100 text-left">
-                    <tr>
-                        <th className="py-2 px-4">Name</th>
-                        <th className="py-2 px-4">Email</th>
-                        <th className="py-2 px-4">Department</th>
+            <h1 className="text-3xl font-bold mb-6 text-gray-800">Users</h1>
+            <div className="overflow-x-auto bg-white rounded-lg shadow-lg">
+                <table className="w-full text-left border-collapse">
+                <thead>
+                    <tr className="bg-gray-100 text-gray-700 text-sm uppercase tracking-wider">
+                    <th className="px-6 py-3">Name</th>
+                    <th className="px-6 py-3">Email</th>
+                    <th className="px-6 py-3">Department</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {users.map((u) => (
-                        <tr key={u._id} className="border-b hover:bg-gray-50">
-                            <td className="py-2 px-4">{u.name}</td>
-                            <td className="py-2 px-4">{u.email}</td>
-                            <td className="py-2 px-4">{u.department}</td>
-                        </tr>
+                    {users.map((u, idx) => (
+                    <tr
+                        key={u._id}
+                        className={`text-gray-800 ${
+                        idx % 2 === 0 ? "bg-gray-50" : "bg-white"
+                        } hover:bg-blue-50 transition`}
+                    >
+                        <td className="px-6 py-4 font-medium">{u.name}</td>
+                        <td className="px-6 py-4">{u.email}</td>
+                        <td className="px-6 py-4">{u.department}</td>
+                    </tr>
                     ))}
                 </tbody>
-            </table>
-        </div>
+                </table>
+            </div>
+            </div>
     );
 }
 
