@@ -41,4 +41,31 @@ router.post('/', async (req, res) => {
     }
 });
 
+// PUT - update campaign
+router.put('/:id', async (req, res) => {
+    try {
+        const { name, type, status } = req.body;
+        const updatedCampaign = await Campaign.findByIdAndUpdate(
+            req.params.id,
+            { name, type, status },
+            { new: true }
+        );
+        if (!updatedCampaign) return res.status(404).json({ error: 'Campaign not found' });
+        res.json(updatedCampaign);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to update campaign' });
+    }
+});
+
+// DELETE - remove campaign
+router.delete('/:id', async (req, res) => {
+    try {
+        const deletedCampaign = await Campaign.findByIdAndDelete(req.params.id);
+        if (!deletedCampaign) return res.status(404).json({ error: 'Campaign not found' });
+        res.json({ message: 'Campaign deleted' });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to delete campaign' });
+    }
+});
+
 module.exports = router;
