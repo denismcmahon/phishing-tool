@@ -3,6 +3,7 @@ import Navbar from './components/Navbar';
 import Dashboard from './pages/Dashboard';
 import Users from './pages/Users';
 import Campaigns from './pages/Campaigns';
+import Templates from './pages/Templates';
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
           <Route path='/' element={<Dashboard />} />
           <Route path='/users' element={<Users />} />
           <Route path='/campaigns' element={<Campaigns />} />
+          <Route path='/templates' element={<Templates />} />
         </Routes>
       </div>
     </Router>
