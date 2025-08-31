@@ -16,10 +16,16 @@ export default function Templates() {
   const [loading, setLoading] = useState(true);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+
   const [name, setName] = useState('');
   const [subject, setSubject] = useState('');
   const [bodyHtml, setBodyHtml] = useState('');
   const [bodyText, setBodyText] = useState('');
+
+  const [aiModal, setAiModal] = useState(false);
+  const [aiTheme, setAiTheme] = useState('');
+  const [aiTone, setAiTone] = useState('urgent');
+  const [aiLoading, setAiLoading] = useState(false);
 
   useEffect(() => {
     fetchTemplates();
@@ -59,15 +65,45 @@ export default function Templates() {
       .catch((err) => console.error('Error deleting template:', err));
   };
 
+  const handleGenerateAI = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAiLoading(true);
+    try {
+      const res = await api.post('/templates/ai-generate', {
+        theme: aiTheme,
+        tone: aiTone,
+      });
+
+      // backend returns { subject, bodyHtml, bodyText }
+      setName(aiTheme); // use theme as the template name by default
+      setSubject(res.data.subject || '');
+      setBodyHtml(res.data.bodyHtml || '');
+      setBodyText(res.data.bodyText || '');
+
+      // close AI modal, open Add Template modal
+      setAiModal(false);
+      setIsModalOpen(true);
+    } catch (err) {
+      console.error('AI generate failed', err);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   if (loading) return <p className='p-6'>Loading templates…</p>;
 
   return (
     <div className='p-6 max-w-6xl mx-auto'>
       <div className='flex justify-between items-center mb-6'>
         <h1 className='text-3xl font-bold'>Email Templates</h1>
-        <button onClick={() => setIsModalOpen(true)} className={btnPrimary}>
-          + Add Template
-        </button>
+        <div className='flex gap-2'>
+          <button onClick={() => setIsModalOpen(true)} className={btnPrimary}>
+            + Add Template
+          </button>
+          <button onClick={() => setAiModal(true)} className={btnGhost}>
+            Generate with AI
+          </button>
+        </div>
       </div>
 
       <div className='bg-white rounded-xl shadow-lg overflow-x-auto'>
@@ -109,7 +145,7 @@ export default function Templates() {
             {templates.length === 0 && (
               <tr>
                 <td className='px-6 py-6 text-slate-500' colSpan={4}>
-                  No templates yet. Click “Add Template” to create one.
+                  No templates yet. Click “Add Template” or “Generate with AI”.
                 </td>
               </tr>
             )}
@@ -184,6 +220,52 @@ export default function Templates() {
             </button>
             <button type='submit' className={btnPrimary}>
               Save
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        isOpen={aiModal}
+        onClose={() => setAiModal(false)}
+        title='Generate Template with AI'
+      >
+        <form onSubmit={handleGenerateAI} className='space-y-4'>
+          <div>
+            <label className='block text-sm font-medium mb-1'>Theme</label>
+            <input
+              className='w-full border p-2 rounded'
+              value={aiTheme}
+              onChange={(e) => setAiTheme(e.target.value)}
+              placeholder='Invoice Scam, HR Alert, etc.'
+              required
+            />
+          </div>
+
+          <div>
+            <label className='block text-sm font-medium mb-1'>Tone</label>
+            <select
+              className='w-full border p-2 rounded'
+              value={aiTone}
+              onChange={(e) => setAiTone(e.target.value)}
+            >
+              <option value='urgent'>Urgent</option>
+              <option value='casual'>Casual</option>
+              <option value='formal'>Formal</option>
+              <option value='friendly'>Friendly</option>
+            </select>
+          </div>
+
+          <div className='flex justify-end gap-2 pt-2'>
+            <button
+              type='button'
+              onClick={() => setAiModal(false)}
+              className={btnGhost}
+            >
+              Cancel
+            </button>
+            <button type='submit' className={btnPrimary} disabled={aiLoading}>
+              {aiLoading ? 'Generating…' : 'Generate'}
             </button>
           </div>
         </form>

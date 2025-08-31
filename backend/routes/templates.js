@@ -1,6 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const Template = require('../models/Template');
+const OpenAI = require('openai');
+
+const client = new OpenAI({
+  apiKey: process.env.OPENROUTER_AI_API_KEY,
+  baseURL: 'https://openrouter.ai/api/v1',
+});
 
 // GET - get all email templates
 router.get('/', async (req, res) => {
@@ -42,6 +48,44 @@ router.delete('/:id', async (req, res) => {
     res.json({ message: 'Template deleted' });
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete template' });
+  }
+});
+
+// POST - AI generate an email template
+router.post('/ai-generate', async (req, res) => {
+  try {
+    const { theme, tone } = req.body;
+
+    const prompt = `
+      Write a phishing-style email template.
+      Theme: ${theme}.
+      Tone: ${tone}.
+      Include a subject line, an HTML body, and a plain text body.
+    `;
+
+    const response = await client.chat.completions.create({
+      model: 'openai/gpt-3.5-turbo',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an AI that generates phishing simulation emails.',
+        },
+        { role: 'user', content: prompt },
+      ],
+    });
+
+    const text = response.choices[0].message.content;
+
+    res.json({
+      subject: `Phishing Alert: ${theme}`,
+      bodyHtml: `<p>${text.replace(/\n/g, '<br/>')}</p>`,
+      bodyText: text,
+    });
+  } catch (err) {
+    console.error('AI generation error:', err);
+    res
+      .status(500)
+      .json({ error: 'AI generation failed', details: err.message });
   }
 });
 

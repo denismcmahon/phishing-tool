@@ -42,8 +42,8 @@ router.post('/', async (req, res) => {
       type,
       template,
       users,
-      status: 'running',
-      emails: users.map((u) => ({ userId: u, status: 'sent' })),
+      status: 'draft',
+      emails: [],
     });
 
     await newCampaign.save();
@@ -102,6 +102,7 @@ router.post('/:id/send', async (req, res) => {
     if (!campaign)
       return res.status(404).json({ message: 'Campaign not found' });
 
+    campaign.emails = [];
     campaign.status = 'running';
     await campaign.save();
 
