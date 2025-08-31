@@ -20,11 +20,14 @@ app.get('/', (req, res) => {
 });
 
 // Mongo connection
-mongoose.connect(process.env.MONGO_URI)
+mongoose
+  .connect(process.env.MONGO_URI)
   .then(() => {
     console.log('MongoDB connected');
     app.listen(process.env.PORT || 4000, () =>
-      console.log(`Server running on http://localhost:${process.env.PORT || 4000}`)
+      console.log(
+        `Server running on http://localhost:${process.env.PORT || 4000}`
+      )
     );
   })
   .catch((err) => console.error('Mongo error:', err));
