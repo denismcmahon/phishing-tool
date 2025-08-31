@@ -99,7 +99,7 @@ export default function Templates() {
                 <td className='px-6 py-4'>
                   <button
                     onClick={() => handleDeleteTemplate(t._id)}
-                    className={btnDanger}
+                    className={`${btnDanger} text-sm px-4 py-2`}
                   >
                     Delete
                   </button>

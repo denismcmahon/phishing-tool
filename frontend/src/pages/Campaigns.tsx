@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { api } from '../services/api';
 import Modal from '../components/Modal';
-import { btnPrimary, btnGhost } from '../styles/buttons';
+import { btnPrimary, btnDanger, btnGhost } from '../styles/buttons';
 
 type CampaignStatus = 'draft' | 'running' | 'completed';
 
@@ -64,9 +64,6 @@ export default function Campaigns() {
       api.get<Template[]>('/templates'),
     ])
       .then(([campaignResponse, userRespone, templateResponse]) => {
-        console.log('DM ==> campaignResponse: ', campaignResponse);
-        console.log('DM ==> userRespone: ', userRespone);
-        console.log('DM ==> templateResponse: ', templateResponse);
         setCampaigns(campaignResponse.data);
         setUsers(userRespone.data);
         setTemplates(templateResponse.data);
@@ -96,6 +93,13 @@ export default function Campaigns() {
         setIsModalOpen(false);
       })
       .catch((err) => console.error('Error adding campaign:', err));
+  };
+
+  const handleSendCampaign = (id: string) => {
+    api
+      .post(`/campaigns/${id}/send`)
+      .then(() => alert('Emails sent (check Ethereal inbox)'))
+      .catch((err) => console.error('Error sending campaign:', err));
   };
 
   const handleDeleteCampaign = (id: string) => {
@@ -159,12 +163,20 @@ export default function Campaigns() {
                   </td>
                   <td className='px-6 py-4'>{c.template?.name || '—'}</td>
                   <td className='px-6 py-4'>
-                    <button
-                      onClick={() => handleDeleteCampaign(c._id)}
-                      className='bg-red-600 hover:bg-red-700 text-white rounded-md px-3 py-1.5 text-sm transition'
-                    >
-                      Delete
-                    </button>
+                    <div className='flex gap-2'>
+                      <button
+                        onClick={() => handleSendCampaign(c._id)}
+                        className={`${btnPrimary} text-sm px-4 py-2`}
+                      >
+                        Send
+                      </button>
+                      <button
+                        onClick={() => handleDeleteCampaign(c._id)}
+                        className={`${btnDanger} text-sm px-4 py-2`}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );

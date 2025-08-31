@@ -104,7 +104,7 @@ export default function Users() {
                 <td className='px-6 py-4'>
                   <button
                     onClick={() => handleDeleteUser(u._id)}
-                    className={btnDanger}
+                    className={`${btnDanger} text-sm px-4 py-2`}
                   >
                     Delete
                   </button>
