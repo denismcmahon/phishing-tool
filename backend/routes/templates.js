@@ -26,12 +26,12 @@ router.get('/:id', async (req, res) => {
 // POST - create a new email template
 router.post('/', async (req, res) => {
   try {
-    const { name, subject, bodyHTML, bodyText } = req.body;
-    const template = new Template({ name, subject, bodyHTML, bodyText });
+    const { name, subject, bodyHtml, bodyText } = req.body;
+    const template = new Template({ name, subject, bodyHtml, bodyText });
     await template.save();
     res.status(201).json(template);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to create template' });
+    res.status(500).json({ error: 'Failed to create template', err: err });
   }
 });
 

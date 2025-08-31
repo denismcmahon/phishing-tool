@@ -17,6 +17,12 @@ interface Campaign {
   status: CampaignStatus;
   createdAt: string;
   users: { _id: string; name: string }[];
+  template?: { _id: string; name: string };
+}
+
+interface Template {
+  _id: string;
+  name: string;
 }
 
 const inputStyles =
@@ -44,18 +50,26 @@ export default function Campaigns() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // modal + form state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [name, setName] = useState('');
   const [type, setType] = useState<Campaign['type']>('invoice');
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [template, setTemplate] = useState('');
 
   useEffect(() => {
-    Promise.all([api.get<Campaign[]>('/campaigns'), api.get<User[]>('/users')])
-      .then(([cRes, uRes]) => {
-        setCampaigns(cRes.data);
-        setUsers(uRes.data);
+    Promise.all([
+      api.get<Campaign[]>('/campaigns'),
+      api.get<User[]>('/users'),
+      api.get<Template[]>('/templates'),
+    ])
+      .then(([campaignResponse, userRespone, templateResponse]) => {
+        console.log('DM ==> campaignResponse: ', campaignResponse);
+        console.log('DM ==> userRespone: ', userRespone);
+        console.log('DM ==> templateResponse: ', templateResponse);
+        setCampaigns(campaignResponse.data);
+        setUsers(userRespone.data);
+        setTemplates(templateResponse.data);
       })
       .catch((err) => console.error('Error fetching data:', err))
       .finally(() => setLoading(false));
@@ -70,12 +84,16 @@ export default function Campaigns() {
   const handleAddCampaign = (e: React.FormEvent) => {
     e.preventDefault();
     api
-      .post<Campaign>('/campaigns', { name, type, users: selectedUsers })
+      .post<Campaign>('/campaigns', {
+        name,
+        type,
+        users: selectedUsers,
+        template,
+      })
       .then((res) => {
-        // ✅ Ensure backend POST /campaigns returns a populated doc
         setCampaigns((prev) => [...prev, res.data]);
         resetForm();
-        setIsModalOpen(false); // ✅ close (don’t toggle)
+        setIsModalOpen(false);
       })
       .catch((err) => console.error('Error adding campaign:', err));
   };
@@ -99,7 +117,6 @@ export default function Campaigns() {
 
   return (
     <div className='p-6 max-w-6xl mx-auto'>
-      {/* Page header */}
       <div className='flex items-center justify-between mb-6'>
         <h1 className='text-3xl font-bold'>Campaigns</h1>
         <button onClick={() => setIsModalOpen(true)} className={btnPrimary}>
@@ -107,7 +124,6 @@ export default function Campaigns() {
         </button>
       </div>
 
-      {/* Table card */}
       <div className='bg-white rounded-xl shadow-lg overflow-x-auto'>
         <table className='w-full text-left'>
           <thead>
@@ -117,7 +133,8 @@ export default function Campaigns() {
               <th className='px-6 py-3'>Status</th>
               <th className='px-6 py-3'>Created</th>
               <th className='px-6 py-3'>Users</th>
-              <th className='px-6 py-3 w-28'>Actions</th>
+              <th className='px-6 py-3'>Template</th>
+              <th className='px-6 py-3 w-28'></th>
             </tr>
           </thead>
           <tbody className='divide-y divide-slate-100'>
@@ -140,6 +157,7 @@ export default function Campaigns() {
                   <td className='px-6 py-4'>
                     {c.users?.map((u) => u.name).join(', ') || '—'}
                   </td>
+                  <td className='px-6 py-4'>{c.template?.name || '—'}</td>
                   <td className='px-6 py-4'>
                     <button
                       onClick={() => handleDeleteCampaign(c._id)}
@@ -162,7 +180,6 @@ export default function Campaigns() {
         </table>
       </div>
 
-      {/* Create Campaign Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => {
@@ -229,6 +246,25 @@ export default function Campaigns() {
                 </div>
               )}
             </div>
+          </div>
+
+          <div>
+            <label className='block text-sm font-medium mb-1'>Template</label>
+            <select
+              className='w-full border p-2 rounded bg-white'
+              value={template}
+              onChange={(e) => setTemplate(e.target.value)}
+              required
+            >
+              <option value='' disabled>
+                Select a template
+              </option>
+              {templates.map((t) => (
+                <option key={t._id} value={t._id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className='flex justify-end gap-2 pt-2'>

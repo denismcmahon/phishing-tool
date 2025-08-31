@@ -8,14 +8,12 @@ const Template = require('../models/Template');
 const seedData = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI);
-
     console.log('Connected to MongoDB, seeding data...');
 
     // clear old data
     await User.deleteMany();
     await Campaign.deleteMany();
     await Template.deleteMany();
-
     console.log('Cleared existing collections');
 
     // create users
@@ -25,22 +23,9 @@ const seedData = async () => {
       { name: 'Charlie', email: 'charlie@corp.com', department: 'IT' },
       { name: 'Dana', email: 'dana@corp.com', department: 'Marketing' },
     ]);
+    console.log(`✅ Seeded ${users.length} users`);
 
-    console.log(`Seeded ${users.length} users`);
-
-    // create a sample campaign
-    const campaign = new Campaign({
-      name: 'Invoice Scam Test',
-      type: 'invoice',
-      users: [users[0]._id, users[1]._id],
-      status: 'running',
-      emails: users.slice(0, 2).map((u) => ({ userId: u._id, status: 'sent' })),
-    });
-
-    await campaign.save();
-    console.log(`Seeded campaign: ${campaign.name}`);
-
-    // create email templates
+    // create email templates first
     const templates = await Template.insertMany([
       {
         name: 'Invoice Scam',
@@ -79,13 +64,27 @@ const seedData = async () => {
           'Dear Employee,\n\nHR has released a new policy update. Review here: http://phishing-link.com/hr\n\nHR Department',
       },
     ]);
+    console.log(`✅ Seeded ${templates.length} templates`);
 
-    console.log(`Seeded ${templates.length} templates`);
+    // create a sample campaign and link to first template
+    const campaign = new Campaign({
+      name: 'Invoice Scam Test',
+      type: 'invoice',
+      template: templates[0]._id,
+      users: [users[0]._id, users[1]._id],
+      status: 'running',
+      emails: users.slice(0, 2).map((u) => ({ userId: u._id, status: 'sent' })),
+    });
+
+    await campaign.save();
+    console.log(
+      `✅ Seeded campaign: ${campaign.name} (with template: ${templates[0].name})`
+    );
 
     mongoose.connection.close();
-    console.log('Seeding complete');
+    console.log('🎉 Seeding complete');
   } catch (err) {
-    console.error('Seeding error:', err);
+    console.error('❌ Seeding error:', err);
     mongoose.connection.close();
   }
 };
