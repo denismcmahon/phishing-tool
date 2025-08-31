@@ -6,6 +6,7 @@ require('dotenv').config();
 const userRoutes = require('./routes/users');
 const campaignRoutes = require('./routes/campaigns');
 const resultRoutes = require('./routes/results');
+const templateRoutes = require('./routes/templates');
 
 const app = express();
 app.use(cors());
@@ -14,6 +15,7 @@ app.use(express.json());
 app.use('/api/users', userRoutes);
 app.use('/api/campaigns', campaignRoutes);
 app.use('/api/results', resultRoutes);
+app.use('/api/templates', templateRoutes);
 
 app.get('/', (req, res) => {
   res.send('Phishing Tool API running');
