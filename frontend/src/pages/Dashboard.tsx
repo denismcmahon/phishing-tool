@@ -96,7 +96,9 @@ export default function Dashboard() {
         <Link to='/campaigns' className={btnPrimary}>
           + New Campaign
         </Link>
-        <button className={btnGhost}>+ Email Template</button>
+        <Link to='/templates' className={btnGhost}>
+          + Email Template
+        </Link>
         <Link to='/users' className={btnGhost}>
           + Target List
         </Link>

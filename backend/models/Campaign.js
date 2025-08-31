@@ -23,6 +23,7 @@ const campaignSchema = new mongoose.Schema(
           default: 'sent',
           enum: ['sent', 'clicked', 'reported', 'ignored'],
         },
+        clickedAt: { type: Date },
       },
     ],
   },

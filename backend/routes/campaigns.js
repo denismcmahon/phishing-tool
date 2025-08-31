@@ -117,16 +117,25 @@ router.post('/:id/send', async (req, res) => {
 
     for (const user of campaign.users) {
       try {
-        if (!user.email) {
-          continue;
-        }
+        const trackingUrl = `${
+          process.env.BACKEND_URL || 'http://localhost:4000'
+        }/track/${campaign._id}/${user._id}`;
+
+        // Replace placeholders with user + tracking info
+        const personalizedHtml = campaign.template?.bodyHtml
+          .replace(/User/g, user.name)
+          .replace(/http:\/\/phishing-link\.com/g, trackingUrl);
+
+        const personalizedText = campaign.template?.bodyText
+          .replace(/User/g, user.name)
+          .replace(/http:\/\/phishing-link\.com/g, trackingUrl);
 
         let info = await transporter.sendMail({
           from: '"Security Team" <security@corp.com>',
           to: user.email,
           subject: campaign.template?.subject || 'No subject',
-          text: campaign.template?.bodyText?.replace(/User/g, user.name) || '',
-          html: campaign.template?.bodyHtml?.replace(/User/g, user.name) || '',
+          text: personalizedText || '',
+          html: personalizedHtml || '',
         });
 
         const url = nodemailer.getTestMessageUrl(info);
