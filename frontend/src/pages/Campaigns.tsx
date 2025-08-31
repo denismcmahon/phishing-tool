@@ -1,6 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { api } from '../services/api';
 import Modal from '../components/Modal';
+import { btnPrimary, btnGhost } from '../styles/buttons';
+
+type CampaignStatus = 'draft' | 'running' | 'completed';
 
 interface User {
   _id: string;
@@ -10,30 +13,51 @@ interface User {
 interface Campaign {
   _id: string;
   name: string;
-  type: string;
-  status: string;
+  type: 'invoice' | 'password-reset' | 'hr-alert';
+  status: CampaignStatus;
   createdAt: string;
   users: { _id: string; name: string }[];
 }
 
-function Campaigns() {
+const inputStyles =
+  'w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 placeholder:text-slate-400';
+
+function statusBadge(status: CampaignStatus) {
+  switch (status) {
+    case 'running':
+      return { label: 'Ongoing', tone: 'bg-amber-100 text-amber-700' };
+    case 'completed':
+      return { label: 'Done', tone: 'bg-emerald-100 text-emerald-700' };
+    case 'draft':
+    default:
+      return { label: 'Draft', tone: 'bg-slate-100 text-slate-700' };
+  }
+}
+
+function typeLabel(t: Campaign['type']) {
+  if (t === 'invoice') return 'Invoice Scam';
+  if (t === 'password-reset') return 'Password Reset';
+  return 'HR Alert';
+}
+
+export default function Campaigns() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // modal + form state
   const [isModalOpen, setIsModalOpen] = useState(false);
-
   const [name, setName] = useState('');
-  const [type, setType] = useState('invoice');
+  const [type, setType] = useState<Campaign['type']>('invoice');
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
 
   useEffect(() => {
     Promise.all([api.get<Campaign[]>('/campaigns'), api.get<User[]>('/users')])
-      .then(([campaignsRes, usersResponse]) => {
-        setCampaigns(campaignsRes.data);
-        setUsers(usersResponse.data);
+      .then(([cRes, uRes]) => {
+        setCampaigns(cRes.data);
+        setUsers(uRes.data);
       })
-      .catch((err) => console.error('Error fetching data: ', err))
+      .catch((err) => console.error('Error fetching data:', err))
       .finally(() => setLoading(false));
   }, []);
 
@@ -46,86 +70,99 @@ function Campaigns() {
   const handleAddCampaign = (e: React.FormEvent) => {
     e.preventDefault();
     api
-      .post<Campaign>('/campaigns', {
-        name,
-        type,
-        users: selectedUsers,
-      })
+      .post<Campaign>('/campaigns', { name, type, users: selectedUsers })
       .then((res) => {
-        setCampaigns([...campaigns, res.data]);
-        setName('');
-        setType('invoice');
-        setSelectedUsers([]);
+        // ✅ Ensure backend POST /campaigns returns a populated doc
+        setCampaigns((prev) => [...prev, res.data]);
+        resetForm();
+        setIsModalOpen(false); // ✅ close (don’t toggle)
       })
-      .catch((err) => console.error('Error adding campaign: ', err))
-      .finally(() => setIsModalOpen(!isModalOpen));
+      .catch((err) => console.error('Error adding campaign:', err));
   };
 
   const handleDeleteCampaign = (id: string) => {
     api
       .delete(`/campaigns/${id}`)
-      .then(() => {
-        setCampaigns(campaigns.filter((c) => c._id !== id));
-      })
-      .catch((err) => console.error('Error deleting campaign: ', err));
+      .then(() => setCampaigns((prev) => prev.filter((c) => c._id !== id)))
+      .catch((err) => console.error('Error deleting campaign:', err));
   };
 
-  if (loading) return <p className='p-6'>Loading campaigns...</p>;
+  const recentSorted = useMemo(
+    () =>
+      [...campaigns].sort(
+        (a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)
+      ),
+    [campaigns]
+  );
+
+  if (loading) return <p className='p-6'>Loading campaigns…</p>;
 
   return (
-    <div className='p-6'>
+    <div className='p-6 max-w-6xl mx-auto'>
+      {/* Page header */}
       <div className='flex items-center justify-between mb-6'>
-        <h1 className='text-3xl font-bold text-gray-800'>Campaigns</h1>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className='bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700'
-        >
+        <h1 className='text-3xl font-bold'>Campaigns</h1>
+        <button onClick={() => setIsModalOpen(true)} className={btnPrimary}>
           + New Campaign
         </button>
       </div>
 
-      <div className='overflow-x-auto bg-white rounded-lg shadow-lg'>
-        <table className='w-full text-left border-collapse'>
+      {/* Table card */}
+      <div className='bg-white rounded-xl shadow-lg overflow-x-auto'>
+        <table className='w-full text-left'>
           <thead>
-            <tr className='bg-gray-100 text-gray-700 text-sm uppercase tracking-wider'>
+            <tr className='bg-slate-50 text-slate-600 text-xs uppercase tracking-wide'>
               <th className='px-6 py-3'>Name</th>
               <th className='px-6 py-3'>Type</th>
               <th className='px-6 py-3'>Status</th>
               <th className='px-6 py-3'>Created</th>
               <th className='px-6 py-3'>Users</th>
-              <th className='px-6 py-3'></th>
+              <th className='px-6 py-3 w-28'>Actions</th>
             </tr>
           </thead>
-          <tbody>
-            {campaigns.map((c, idx) => (
-              <tr
-                key={c._id}
-                className={`text-gray-800 ${
-                  idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'
-                } hover:bg-blue-50 transition`}
-              >
-                <td className='px-6 py-4 font-medium'>{c.name}</td>
-                <td className='px-6 py-4'>{c.type}</td>
-                <td className='px-6 py-4'>{c.status}</td>
-                <td className='px-6 py-4'>
-                  {new Date(c.createdAt).toLocaleDateString()}
-                </td>
-                <td className='px-6 py-4'>
-                  {c.users.map((u) => u.name).join(', ')}
-                </td>
-                <td className='px-6 py-4'>
-                  <button
-                    onClick={() => handleDeleteCampaign(c._id)}
-                    className='bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600'
-                  >
-                    Delete
-                  </button>
+          <tbody className='divide-y divide-slate-100'>
+            {recentSorted.map((c) => {
+              const badge = statusBadge(c.status as CampaignStatus);
+              return (
+                <tr key={c._id} className='hover:bg-blue-50/40 transition'>
+                  <td className='px-6 py-4 font-medium'>{c.name}</td>
+                  <td className='px-6 py-4'>{typeLabel(c.type)}</td>
+                  <td className='px-6 py-4'>
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.tone}`}
+                    >
+                      {badge.label}
+                    </span>
+                  </td>
+                  <td className='px-6 py-4'>
+                    {new Date(c.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className='px-6 py-4'>
+                    {c.users?.map((u) => u.name).join(', ') || '—'}
+                  </td>
+                  <td className='px-6 py-4'>
+                    <button
+                      onClick={() => handleDeleteCampaign(c._id)}
+                      className='bg-red-600 hover:bg-red-700 text-white rounded-md px-3 py-1.5 text-sm transition'
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+            {campaigns.length === 0 && (
+              <tr>
+                <td className='px-6 py-6 text-slate-500' colSpan={6}>
+                  No campaigns yet. Click “New Campaign” to create one.
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>
+
+      {/* Create Campaign Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => {
@@ -136,11 +173,9 @@ function Campaigns() {
       >
         <form onSubmit={handleAddCampaign} className='space-y-4'>
           <div>
-            <label className='block text-sm font-medium text-gray-700 mb-1'>
-              Name
-            </label>
+            <label className='block text-sm font-medium mb-1'>Name</label>
             <input
-              className='w-full border p-2 rounded'
+              className={inputStyles}
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder='Quarterly Security Test'
@@ -149,13 +184,11 @@ function Campaigns() {
           </div>
 
           <div>
-            <label className='block text-sm font-medium text-gray-700 mb-1'>
-              Type
-            </label>
+            <label className='block text-sm font-medium mb-1'>Type</label>
             <select
-              className='w-full border p-2 rounded bg-white'
+              className={inputStyles}
               value={type}
-              onChange={(e) => setType(e.target.value)}
+              onChange={(e) => setType(e.target.value as Campaign['type'])}
             >
               <option value='invoice'>Invoice Scam</option>
               <option value='password-reset'>Password Reset</option>
@@ -164,12 +197,15 @@ function Campaigns() {
           </div>
 
           <div>
-            <label className='block text-sm font-medium text-gray-700 mb-2'>
+            <label className='block text-sm font-medium mb-2'>
               Select Targets
             </label>
-            <div className='border rounded p-2 max-h-40 overflow-y-auto bg-white'>
+            <div className='border border-slate-300 rounded-md p-2 max-h-48 overflow-y-auto bg-white'>
               {users.map((u) => (
-                <label key={u._id} className='flex items-center gap-2 py-1'>
+                <label
+                  key={u._id}
+                  className='flex items-center gap-2 py-1 px-1 rounded hover:bg-slate-50'
+                >
                   <input
                     type='checkbox'
                     value={u._id}
@@ -184,9 +220,14 @@ function Campaigns() {
                       }
                     }}
                   />
-                  <span>{u.name}</span>
+                  <span className='text-sm'>{u.name}</span>
                 </label>
               ))}
+              {users.length === 0 && (
+                <div className='text-sm text-slate-500 px-1 py-2'>
+                  No users available.
+                </div>
+              )}
             </div>
           </div>
 
@@ -197,14 +238,11 @@ function Campaigns() {
                 resetForm();
                 setIsModalOpen(false);
               }}
-              className='px-4 py-2 rounded border border-gray-300 hover:bg-gray-100'
+              className={btnGhost}
             >
               Cancel
             </button>
-            <button
-              type='submit'
-              className='bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700'
-            >
+            <button type='submit' className={btnPrimary}>
               Create
             </button>
           </div>
@@ -213,5 +251,3 @@ function Campaigns() {
     </div>
   );
 }
-
-export default Campaigns;
