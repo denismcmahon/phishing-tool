@@ -19,7 +19,9 @@ router.get('/:campaignId/:userId', async (req, res) => {
       await campaign.save();
     }
 
-    res.redirect('https://temp.com');
+    res.redirect(
+      `${process.env.FRONTEND_URL || 'http://localhost:5173'}/phished`
+    );
   } catch (err) {
     res.status(500).send('Error tracking click');
   }

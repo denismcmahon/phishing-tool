@@ -72,8 +72,8 @@ const seedData = async () => {
       type: 'invoice',
       template: templates[0]._id,
       users: [users[0]._id, users[1]._id],
-      status: 'running',
-      emails: users.slice(0, 2).map((u) => ({ userId: u._id, status: 'sent' })),
+      status: 'draft',
+      emails: [],
     });
 
     await campaign.save();

@@ -98,12 +98,13 @@ router.post('/:id/send', async (req, res) => {
     const campaign = await Campaign.findById(req.params.id)
       .populate('users')
       .populate('template');
-    console.log('DM ==> sendEmails ==> campaign: ', campaign);
-    if (!campaign) {
-      return res.status(404).json({ message: 'Campaign not found' });
-    }
 
-    // configure test transport (Ethereal)
+    if (!campaign)
+      return res.status(404).json({ message: 'Campaign not found' });
+
+    campaign.status = 'running';
+    await campaign.save();
+
     let transporter = nodemailer.createTransport({
       host: 'smtp.ethereal.email',
       port: 587,
@@ -116,38 +117,44 @@ router.post('/:id/send', async (req, res) => {
     const previewUrls = [];
 
     for (const user of campaign.users) {
-      try {
-        const trackingUrl = `${
-          process.env.BACKEND_URL || 'http://localhost:4000'
-        }/track/${campaign._id}/${user._id}`;
+      if (!user.email) continue;
 
-        // Replace placeholders with user + tracking info
-        const personalizedHtml = campaign.template?.bodyHtml
-          .replace(/User/g, user.name)
-          .replace(/http:\/\/phishing-link\.com/g, trackingUrl);
+      const trackingUrl = `${
+        process.env.BACKEND_URL || 'http://localhost:4000'
+      }/track/${campaign._id}/${user._id}`;
 
-        const personalizedText = campaign.template?.bodyText
-          .replace(/User/g, user.name)
-          .replace(/http:\/\/phishing-link\.com/g, trackingUrl);
+      const htmlBody = campaign.template?.bodyHtml
+        ? campaign.template.bodyHtml.replace(
+            /href="[^"]+"/g,
+            `href="${trackingUrl}"`
+          )
+        : '';
 
-        let info = await transporter.sendMail({
-          from: '"Security Team" <security@corp.com>',
-          to: user.email,
-          subject: campaign.template?.subject || 'No subject',
-          text: personalizedText || '',
-          html: personalizedHtml || '',
-        });
+      const textBody = campaign.template?.bodyText
+        ? campaign.template.bodyText.replace(/http[^\s]+/g, trackingUrl)
+        : '';
 
-        const url = nodemailer.getTestMessageUrl(info);
-        console.log(`Sent to ${user.email}: Preview URL: ${url}`);
+      let info = await transporter.sendMail({
+        from: '"Security Team" <security@corp.com>',
+        to: user.email,
+        subject: campaign.template?.subject || 'No subject',
+        text: textBody.replace(/User/g, user.name),
+        html: htmlBody.replace(/User/g, user.name),
+      });
 
-        previewUrls.push({ email: user.email, url });
-      } catch (err) {
-        console.error(`Failed sending to ${user.email}:`, err);
-      }
+      const previewUrl = nodemailer.getTestMessageUrl(info);
+
+      campaign.emails.push({ userId: user._id, status: 'sent' });
+
+      previewUrls.push({ email: user.email, previewUrl, trackingUrl });
+
+      console.log(`
+        Sent to: ${user.email}
+        Preview: ${previewUrl}
+        Tracking: ${trackingUrl}
+      `);
     }
 
-    campaign.status = 'completed';
     await campaign.save();
 
     return res.json({
@@ -155,7 +162,8 @@ router.post('/:id/send', async (req, res) => {
       previews: previewUrls,
     });
   } catch (err) {
-    return res.status(500).json({ message: 'Failed to send emails', err: err });
+    console.error('Send emails error:', err);
+    return res.status(500).json({ message: 'Failed to send emails', err });
   }
 });
 
