@@ -110,10 +110,7 @@ export default function Campaigns() {
   };
 
   const recentSorted = useMemo(
-    () =>
-      [...campaigns].sort(
-        (a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)
-      ),
+    () => [...campaigns].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)),
     [campaigns]
   );
 
@@ -155,12 +152,8 @@ export default function Campaigns() {
                       {badge.label}
                     </span>
                   </td>
-                  <td className='px-6 py-4'>
-                    {new Date(c.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className='px-6 py-4'>
-                    {c.users?.map((u) => u.name).join(', ') || '—'}
-                  </td>
+                  <td className='px-6 py-4'>{new Date(c.createdAt).toLocaleDateString()}</td>
+                  <td className='px-6 py-4'>{c.users?.map((u) => u.name).join(', ') || '—'}</td>
                   <td className='px-6 py-4'>{c.template?.name || '—'}</td>
                   <td className='px-6 py-4'>
                     <div className='flex gap-2'>
@@ -226,9 +219,7 @@ export default function Campaigns() {
           </div>
 
           <div>
-            <label className='block text-sm font-medium mb-2'>
-              Select Targets
-            </label>
+            <label className='block text-sm font-medium mb-2'>Select Targets</label>
             <div className='border border-slate-300 rounded-md p-2 max-h-48 overflow-y-auto bg-white'>
               {users.map((u) => (
                 <label
@@ -243,9 +234,7 @@ export default function Campaigns() {
                       if (e.target.checked) {
                         setSelectedUsers((prev) => [...prev, u._id]);
                       } else {
-                        setSelectedUsers((prev) =>
-                          prev.filter((id) => id !== u._id)
-                        );
+                        setSelectedUsers((prev) => prev.filter((id) => id !== u._id));
                       }
                     }}
                   />
@@ -253,9 +242,7 @@ export default function Campaigns() {
                 </label>
               ))}
               {users.length === 0 && (
-                <div className='text-sm text-slate-500 px-1 py-2'>
-                  No users available.
-                </div>
+                <div className='text-sm text-slate-500 px-1 py-2'>No users available.</div>
               )}
             </div>
           </div>

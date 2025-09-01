@@ -31,25 +31,25 @@ const seedData = async () => {
         name: 'Invoice Scam',
         subject: 'Urgent: Outstanding Invoice Payment Required',
         bodyHtml: `
-          <p>Dear User,</p>
+          <p>Dear [User],</p>
           <p>Our records indicate that you have an outstanding invoice that requires immediate attention.</p>
           <p><a href="http://phishing-link.com">Click here</a> to review and settle your balance.</p>
           <p>Thank you,</p>
           <p>Finance Department</p>
         `,
         bodyText:
-          'Dear User,\n\nOur records indicate you have an outstanding invoice. Visit http://phishing-link.com to review and settle your balance.\n\nFinance Department',
+          'Dear [User],\n\nOur records indicate you have an outstanding invoice. Visit http://phishing-link.com to review and settle your balance.\n\nFinance Department',
       },
       {
         name: 'Password Reset',
         subject: 'Password Reset Request',
         bodyHtml: `
-          <p>Hello,</p>
+          <p>Hello [User],</p>
           <p>We received a request to reset your account password. If this was you, please <a href="http://phishing-link.com/reset">reset your password here</a>.</p>
           <p>If not, please ignore this email.</p>
         `,
         bodyText:
-          'Hello,\n\nWe received a request to reset your password. Reset at http://phishing-link.com/reset\n\nIf not, ignore this email.',
+          'Hello [User],\n\nWe received a request to reset your password. Reset at http://phishing-link.com/reset\n\nIf not, ignore this email.',
       },
       {
         name: 'HR Alert',
@@ -77,9 +77,7 @@ const seedData = async () => {
     });
 
     await campaign.save();
-    console.log(
-      `✅ Seeded campaign: ${campaign.name} (with template: ${templates[0].name})`
-    );
+    console.log(`✅ Seeded campaign: ${campaign.name} (with template: ${templates[0].name})`);
 
     mongoose.connection.close();
     console.log('🎉 Seeding complete');

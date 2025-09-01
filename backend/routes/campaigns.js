@@ -8,9 +8,7 @@ const nodemailer = require('nodemailer');
 // GET - get all campaigns
 router.get('/', async (req, res) => {
   try {
-    const campaigns = await Campaign.find()
-      .populate('users')
-      .populate('template');
+    const campaigns = await Campaign.find().populate('users').populate('template');
     res.json(campaigns);
   } catch (err) {
     console.error('Fetch campaigns error:', err);
@@ -21,9 +19,7 @@ router.get('/', async (req, res) => {
 // GET - get single campaign by id
 router.get('/:id', async (req, res) => {
   try {
-    const campaign = await Campaign.findById(req.params.id)
-      .populate('users')
-      .populate('template');
+    const campaign = await Campaign.findById(req.params.id).populate('users').populate('template');
     if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
     res.json(campaign);
   } catch (err) {
@@ -70,8 +66,7 @@ router.put('/:id', async (req, res) => {
     )
       .populate('users')
       .populate('template');
-    if (!updatedCampaign)
-      return res.status(404).json({ error: 'Campaign not found' });
+    if (!updatedCampaign) return res.status(404).json({ error: 'Campaign not found' });
     res.json(updatedCampaign);
   } catch (err) {
     console.error('Update campaign error:', err);
@@ -83,8 +78,7 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const deletedCampaign = await Campaign.findByIdAndDelete(req.params.id);
-    if (!deletedCampaign)
-      return res.status(404).json({ error: 'Campaign not found' });
+    if (!deletedCampaign) return res.status(404).json({ error: 'Campaign not found' });
     res.json({ message: 'Campaign deleted' });
   } catch (err) {
     console.error('Delete campaign error:', err);
@@ -95,12 +89,9 @@ router.delete('/:id', async (req, res) => {
 // POST - send emails for a campaign
 router.post('/:id/send', async (req, res) => {
   try {
-    const campaign = await Campaign.findById(req.params.id)
-      .populate('users')
-      .populate('template');
+    const campaign = await Campaign.findById(req.params.id).populate('users').populate('template');
 
-    if (!campaign)
-      return res.status(404).json({ message: 'Campaign not found' });
+    if (!campaign) return res.status(404).json({ message: 'Campaign not found' });
 
     campaign.emails = [];
     campaign.status = 'running';
@@ -120,15 +111,12 @@ router.post('/:id/send', async (req, res) => {
     for (const user of campaign.users) {
       if (!user.email) continue;
 
-      const trackingUrl = `${
-        process.env.BACKEND_URL || 'http://localhost:4000'
-      }/track/${campaign._id}/${user._id}`;
+      const trackingUrl = `${process.env.BACKEND_URL || 'http://localhost:4000'}/api/track/${
+        campaign._id
+      }/${user._id}`;
 
       const htmlBody = campaign.template?.bodyHtml
-        ? campaign.template.bodyHtml.replace(
-            /href="[^"]+"/g,
-            `href="${trackingUrl}"`
-          )
+        ? campaign.template.bodyHtml.replace(/href=['"][^'"]+['"]/gi, `href="${trackingUrl}"`)
         : '';
 
       const textBody = campaign.template?.bodyText
@@ -139,8 +127,8 @@ router.post('/:id/send', async (req, res) => {
         from: '"Security Team" <security@corp.com>',
         to: user.email,
         subject: campaign.template?.subject || 'No subject',
-        text: textBody.replace(/User/g, user.name),
-        html: htmlBody.replace(/User/g, user.name),
+        text: textBody.replace(/\[User\]/g, user.name),
+        html: htmlBody.replace(/\[User\]/g, user.name),
       });
 
       const previewUrl = nodemailer.getTestMessageUrl(info);

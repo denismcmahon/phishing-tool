@@ -57,10 +57,19 @@ router.post('/ai-generate', async (req, res) => {
     const { theme, tone } = req.body;
 
     const prompt = `
-      Write a phishing-style email template.
-      Theme: ${theme}.
-      Tone: ${tone}.
-      Include a subject line, an HTML body, and a plain text body.
+      Generate a phishing simulation email template in JSON format.
+      Rules:
+      - Use [User] as the placeholder for the recipient’s name.
+      - Return ONLY valid JSON (no markdown, no commentary).
+      - JSON schema:
+      {
+        "subject": "<string>",
+        "bodyHtml": "<valid HTML string>",
+        "bodyText": "<plain text string, with \\n line breaks between paragraphs>"
+      }
+
+      Theme: ${theme}
+      Tone: ${tone}
     `;
 
     const response = await client.chat.completions.create({
@@ -68,24 +77,20 @@ router.post('/ai-generate', async (req, res) => {
       messages: [
         {
           role: 'system',
-          content: 'You are an AI that generates phishing simulation emails.',
+          content: 'You generate phishing simulation emails in JSON only.',
         },
         { role: 'user', content: prompt },
       ],
     });
 
-    const text = response.choices[0].message.content;
+    // Parse JSON directly from AI response
+    const raw = response.choices[0].message.content || '{}';
+    const parsed = JSON.parse(raw);
 
-    res.json({
-      subject: `Phishing Alert: ${theme}`,
-      bodyHtml: `<p>${text.replace(/\n/g, '<br/>')}</p>`,
-      bodyText: text,
-    });
+    res.json(parsed);
   } catch (err) {
     console.error('AI generation error:', err);
-    res
-      .status(500)
-      .json({ error: 'AI generation failed', details: err.message });
+    res.status(500).json({ error: 'AI generation failed', details: err.message });
   }
 });
 

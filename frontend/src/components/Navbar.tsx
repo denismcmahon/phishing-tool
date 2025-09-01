@@ -13,7 +13,7 @@ function Navbar() {
   return (
     <nav className='bg-gray-800 text-white px-4 py-4 flex justify-between items-center'>
       <div className='flex space-x-4'>
-        <Link to='/' className='hover:underline'>
+        <Link to='/dashboard' className='hover:underline'>
           Dashboard
         </Link>
         <Link to='/users' className='hover:underline'>
